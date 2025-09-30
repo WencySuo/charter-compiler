@@ -1,0 +1,84 @@
+# Lambda Labs Configuration for Charter Compiler
+# This configuration is optimized for TensorRT-LLM deployment on Lambda Labs
+
+triton:
+  url: "localhost:8001"  # Via SSH tunnel
+  model_name: "ensemble"  # TensorRT-LLM ensemble model
+  protocol: "grpc"
+  timeout: 60
+  
+cache:
+  # TensorRT-LLM KV cache configuration
+  enable_kv_cache_reuse: true
+  tokens_per_block: 32  # Optimized for high reuse scenarios
+  kv_cache_free_gpu_mem_fraction: 0.95  # Use 95% of GPU memory for cache
+  batch_scheduler_policy: "max_utilization"
+  enable_chunked_context: true
+  
+memoization:
+  # Prefix analysis settings
+  min_prefix_length: 50  # Minimum tokens for shared prefix
+  prefix_overlap_threshold: 0.6  # 60% overlap required
+  enable_loop_unrolling: true
+  max_loop_iterations: 100
+  
+  # Pattern priorities
+  patterns:
+    shared_prefix:
+      priority: 90
+      cache_duration: 300  # 5 minutes
+    sequential_chain:
+      priority: 80
+      cache_duration: 180  # 3 minutes
+    delta_matching:
+      priority: 95
+      cache_duration: 600  # 10 minutes
+    loop_invariant:
+      priority: 100
+      cache_duration: 900  # 15 minutes
+  
+execution:
+  max_batch_size: 8
+  sequential_delay_ms: 50
+  enable_warmup: true
+  warmup_iterations: 5
+  
+benchmark:
+  # Test case configurations
+  test_cases:
+    sequential_chain:
+      name: "Document Processor (Sequential Chain)"
+      iterations: 100
+      warmup: 5
+      expected_cache_hit_rate: 0.70
+      expected_latency_reduction: 0.50  # 50%
+      
+    delta_matching:
+      name: "Delta Processor (Loop Optimization)"
+      iterations: 20
+      variations: 10
+      expected_cache_hit_rate: 0.85
+      expected_throughput_increase: 2.5  # 2.5x
+  
+  # Performance tracking
+  track_metrics:
+    - ttft  # Time to first token
+    - tpot  # Time per output token
+    - cache_hit_rate
+    - gpu_memory_usage
+    - throughput
+    
+monitoring:
+  prometheus_port: 8002
+  enable_profiling: true
+  log_level: "INFO"
+  metrics_collection_interval: 10  # seconds
+  
+  # Prometheus metrics endpoint
+  prometheus_url: "http://localhost:8002/metrics"
+  
+  # Alert thresholds
+  alerts:
+    low_cache_hit_rate: 0.5  # Alert if below 50%
+    high_latency: 5.0  # Alert if above 5s
+    gpu_memory_threshold: 0.95  # Alert if above 95%
