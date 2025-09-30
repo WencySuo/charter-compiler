@@ -98,7 +98,7 @@ class ProductionTritonClient:
         # Note: The parameter name may vary based on TensorRT-LLM version
         # Common names: prompt_embedding_table_extra_id, prompt_table_extra_id, cache_id
         if cache_id is not None:
-            cache_id_input = grpcclient.InferInput("prompt_embedding_table_extra_id", [1], "UINT64")
+            cache_id_input = grpcclient.InferInput("prompt_table_extra_id", [1], "UINT64")
             cache_id_input.set_data_from_numpy(np.array([cache_id], dtype=np.uint64))
             inputs.append(cache_id_input)
             logger.debug(f"Using cache_id: {cache_id}")
