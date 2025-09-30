@@ -6,7 +6,7 @@ from ..models import LLMCall
 class LLMCallExtractor(ast.NodeVisitor):
 	def __init__(self):
 		self.calls: List[LLMCall] = []
- 		self.current_function_calls: List[str] = []
+		self.current_function_calls: List[str] = []
 
 	def visit_Call(self, node: ast.Call):
 		# Heuristic: detect attribute calls like self.llm.generate(
