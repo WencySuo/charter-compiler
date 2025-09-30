@@ -1,0 +1,23 @@
+baselines:
+  vllm:
+    enable_prefix_caching: true
+    gpu_memory_utilization: 0.90
+    block_size: 16
+
+  tensorrt_llm_base:
+    enable_kv_cache_reuse: false
+
+test_cases:
+  sequential_chain:
+    iterations: 100
+    document_size: 1000
+    warmup_iterations: 5
+
+  delta_matching:
+    iterations: 20
+    variations: 10
+    base_template_size: 500
+    delta_size: 50
+
+
+

@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.10-trtllm-python-py3
+    ports:
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model_repository:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: tritonserver --model-repository=/models
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+
+

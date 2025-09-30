@@ -1,0 +1,32 @@
+parser:
+  preserve_comments: false
+  track_line_numbers: true
+
+dag:
+  max_depth: 10
+  detect_cycles: true
+
+memoization:
+  min_prefix_length: 50
+  prefix_overlap_threshold: 0.6
+  enable_loop_unrolling: true
+  max_loop_iterations: 100
+
+cache:
+  backend: "tensorrt-llm"
+  tokens_per_block: 32
+  gpu_memory_fraction: 0.95
+  enable_quantization: false
+
+execution:
+  max_batch_size: 8
+  sequential_delay_ms: 50
+  enable_warmup: true
+
+monitoring:
+  prometheus_port: 8002
+  enable_profiling: true
+  log_level: "INFO"
+
+
+
