@@ -1,1 +1,24 @@
-*.env
+# Byte-compiled / cache / logs
+__pycache__/
+*.py[cod]
+*.log
+
+# Virtual env
+.venv/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+
+# Data
+*.csv
+*.tsv
+
+# OS
+.DS_Store
