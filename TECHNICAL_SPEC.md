@@ -101,7 +101,6 @@ class ParsedAgent:
 - `MemoizationAnalyzer`: Main analysis orchestrator
 - `PrefixAnalyzer`: Finds shared prompt prefixes
 - `SequencePatternDetector`: Identifies sequential chains
-- `BranchingAnalyzer`: Detects branching patterns
 - `LoopOptimizer`: Optimizes loop-based patterns
 
 **Pattern Types**:
@@ -149,6 +148,19 @@ class RetentionConfig:
     duration: int  # seconds
 ```
 
+Engine build requirements for prompt table support (must be present when building the TensorRT-LLM engine):
+
+```json
+{
+  "plugin_config": {
+    "use_paged_context_fmha": true,
+    "enable_context_fmha_fp32_acc": true
+  },
+  "use_prompt_tuning": true,
+  "max_prompt_embedding_table_size": 5000
+}
+```
+
 ### 5. Execution Orchestrator (`charter_compiler/executor/`)
 
 **Purpose**: Execute compiled agent with optimized caching
@@ -164,6 +176,31 @@ class RetentionConfig:
 - Parallel branching with shared prefix
 - Loop unrolling with delta tracking
 
+**Cache ID Semantics & Pre-population**
+- Cache IDs cannot be arbitrarily assigned. They must correspond to prompt table entries that are pre-populated.
+- The orchestrator must run a pre-population phase to load shared prefixes into the prompt table and bind them to well-known IDs.
+
+```python
+def prepopulate_cache(self, shared_prefixes: List[str]):
+    """Pre-populate TensorRT-LLM prompt table with shared prefixes"""
+    for idx, prefix in enumerate(shared_prefixes):
+        self.triton_client.infer_with_cache(
+            prompt=prefix,
+            cache_id=idx + 1,  # IDs start at 1
+            max_tokens=1  # Minimal generation to populate cache
+        )
+```
+
+**Token-level Precision**
+- Cache matching operates on token boundaries. Compute shared prefixes on token sequences, not raw strings.
+
+```python
+def tokenize_for_cache(self, prompt: str) -> Tuple[List[int], int]:
+    """Tokenize and return tokens + prefix length for caching."""
+    tokens = self.tokenizer.encode(prompt)
+    return tokens, len(tokens)
+```
+
 ### 6. Performance Monitor (`charter_compiler/monitor/`)
 
 **Purpose**: Track and compare performance vs baseline
@@ -172,7 +209,7 @@ class RetentionConfig:
 - `MetricsCollector`: Collects Prometheus metrics
 - `PerformanceProfiler`: Tracks latency/throughput
 - `CacheHitAnalyzer`: Monitors cache reuse rates
-- `BaselineComparator`: Compares to vLLM baseline
+- `BaselineComparator`: Compares to Tensor-RT vanilla baseline and vLLM baseline
 
 **Metrics Tracked**:
 - Time-to-first-token (TTFT)

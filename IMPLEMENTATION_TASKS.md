@@ -303,6 +303,19 @@ class TRTLLMConfigGenerator:
         return config
 ```
 
+Additional engine build configuration (required for prompt table support):
+
+```json
+{
+  "plugin_config": {
+    "use_paged_context_fmha": true,
+    "enable_context_fmha_fp32_acc": true
+  },
+  "use_prompt_tuning": true,
+  "max_prompt_embedding_table_size": 5000
+}
+```
+
 #### Task 11: Priority Mapper
 **Priority**: P1
 **Estimated Time**: 1 hour
@@ -388,6 +401,16 @@ class TritonClient:
         }
 ```
 
+Add to Task 12 (token-level precision for cache matching):
+
+```python
+def tokenize_for_cache(self, prompt: str) -> Tuple[List[int], int]:
+    """Tokenize and return tokens + prefix length for caching."""
+    tokens = self.tokenizer.encode(prompt)
+    # Cache boundaries must align to exact token prefixes
+    return tokens, len(tokens)
+```
+
 #### Task 13: Cache ID Manager
 **Priority**: P0
 **Estimated Time**: 1 hour
@@ -429,6 +452,22 @@ Scheduling strategies:
 - Parallel branching with shared cache IDs
 - Batch grouping for shared prefixes
 - Warmup phase for common prompts
+
+#### Cache Pre-population (Required)
+
+Cache IDs cannot be arbitrarily assigned. They must correspond to entries that are pre-populated in the TensorRT-LLM prompt table.
+
+```python
+def prepopulate_cache(self, shared_prefixes: List[str]):
+    """Pre-populate TensorRT-LLM prompt table with shared prefixes"""
+    for idx, prefix in enumerate(shared_prefixes):
+        # First run with cache_id to populate the prompt table
+        self.triton_client.infer_with_cache(
+            prompt=prefix,
+            cache_id=idx + 1,  # IDs start at 1
+            max_tokens=1  # Minimal generation to populate cache
+        )
+```
 
 ### Test Case Implementation
 
